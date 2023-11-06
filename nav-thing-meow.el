@@ -221,6 +221,19 @@
 	    "Can't determine prev/next functions for thing %s" x)
           (cons 'nil 'nil))))))
 
+;;; Function
+(defun navtm--thing-make-function-function (x)
+  "Return cons cell of function for function X.
+
+   Cons cell returned is of the form :
+   (select-function . (prev-function . next-function))."
+  (let*
+   ((prev-next (eq (length x) 4))
+    (selection (nth 1 x))
+    (prev (when prev-next (nth 2 x)))
+    (next (when prev-next (nth 3 x))))
+   (cons selection (cons prev next))))
+
 ;;; Registry
 (defvar navtm--thing-registry nil
   "Thing registry.
