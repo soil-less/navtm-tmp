@@ -276,8 +276,8 @@ next-bounds-fn return a cons of (start . end) for that thing.")
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
     (if inner
-        (funcall (cdr (car (car bounds-fn-pair))))
-      (funcall (cdr (car (cdr bounds-fn-pair)))))))
+        (funcall (cdr (cdr (car bounds-fn-pair))))
+      (funcall (cdr (cdr (cdr bounds-fn-pair)))))))
 
 (defun navtm--thing-parse (x near)
   "Parse thing X according to type.
