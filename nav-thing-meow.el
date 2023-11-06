@@ -245,22 +245,12 @@ This is a plist mapping from thing to :
 All of inner-fn, prev-inner-fn, next-inner-fn, bounds-fn, prev-bounds-fn and
 next-bounds-fn return a cons of (start . end) for that thing.")
 
-(defun navtm--thing-register (thing inner-fn bounds-fn
-				    prev-inner-fn next-inner-fn
-				    prev-bounds-fn next-bounds-fn)
-  "Register selection/navigation functions to a THING.
-
-   INNER-FN is the function selecting the inner thing.
-   PREV-INNER-FN and NEXT-INNER-FN are associated to INNER-FN.
-   BOUNDS-FN is the function selecting the bounds thing.
-   PREV-BOUNDS-FN and NEXT-BOUNDS-FN are associated to BOUNDS-FN."
+(defun navtm--thing-register (thing inner-fn bounds-fn)
+  "Register INNER-FN and BOUNDS-FN to a THING."
   (setq navtm--thing-registry
         (plist-put navtm--thing-registry
                    thing
-                   (cons (cons inner-fn (cons prev-inner-fn next-inner-fn))
-			 (cons bounds-fn (cons prev-bounds-fn next-bounds-fn))
-		   ))))
-
+                   (cons inner-fn bounds-fn))))
 
 (defun navtm--parse-range-of-thing (thing inner)
   "Parse either inner or bounds of THING.
