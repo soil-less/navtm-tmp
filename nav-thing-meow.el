@@ -131,7 +131,7 @@
     (let* (
       (forward (eq direction 'forward))
       (match-syntax (cdr syntax))
-      (miss-syntax (if (eq (substring match-syntax 0 1) "^")
+      (miss-syntax (if (equal (substring match-syntax 0 1) "^")
     		     (substring match-syntax 1)
     		   (format "^%s" match-syntax)))
       (skip-syntax-fn (if forward #'skip-syntax-forward #'skip-syntax-backward))
