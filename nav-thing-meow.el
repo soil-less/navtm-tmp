@@ -212,8 +212,10 @@
       (lambda () (bounds-of-thing-at-point x))
       (if (functionp forward-op)
 	  (cons
-	   (navtm--thing-next-symbol-function 'backward x forward-op)
-	   (navtm--thing-next-symbol-function 'forward x forward-op))
+	   (lambda ()
+	     (navtm--thing-next-symbol-function 'backward x forward-op))
+	   (lambda ()
+	     (navtm--thing-next-symbol-function 'forward x forward-op)))
         (progn
 	  (display-warning
 	    "Can't determine prev/next functions for thing %s" x)
