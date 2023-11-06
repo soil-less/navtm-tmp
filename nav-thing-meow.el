@@ -303,6 +303,39 @@ next-bounds-fn return a cons of (start . end) for that thing.")
       (message "Meow: THING definition broken")
       (cons (point) (point))))))
 
+(defun navtm-thing-register (thing inner bounds)
+  "Temporary docstring THING INNER BOUNDS."
+      (let ((inner-fn (navtm--thing-parse inner t))
+          (bounds-fn (navtm--thing-parse bounds nil)))
+      (navtm--thing-register thing inner-fn bounds-fn)))
+
+;;; Things definition:
+
+;; Paragraph cannot be implemented that way, (forward-paragraph -1) put the
+;; point on the line after the previous paragraph, and
+;; (bounds-of-thing-at-point 'paragraph) when inbetween paragraphs selects the
+;; next one. We cannot (goto-char (- (point) 1)) because then the sentences
+;; return incorrect results when searching backward.
+;; (navtm-thing-register 'paragraph 'paragraph 'paragraph)
+
+;; (navtm-thing-register 'sentence 'sentence 'sentence)
+
+;; (navtm-thing-register 'round '(pair ("(") (")")) '(pair ("(") (")")))
+;; (navtm-thing-register 'square '(pair ("[") ("]")) '(pair ("[") ("]")))
+;; (navtm-thing-register 'curly '(pair ("{") ("}")) '(pair ("{") ("}")))
+;; (navtm-thing-register 'angle '(pair ("<") (">")) '(pair ("<") (">")))
+
+;; (navtm-thing-register 'non-whitespace '(syntax . "^-") '(syntax . "^-"))
+
+;; (navtm-thing-register 'testangle '(regexp "<" ">") '(regexp "<" ">"))
+
+;; (navtm-thing-register
+;;  'string
+;;  '(function #'meow--inner-of-string
+;;    #'navtm--thing-prev-inner-string #'navtm--thing-next-inner-string)
+;;  '(function #'meow--bounds-of-string
+;;    #'navtm--thing-prev-bounds-string #'navtm--thing-next-bounds-string))
+
 ;; BELOW NOT CHANGED FROM FIRST IMPL, PLEASE DISREGARD FOR NOW
 ;;; Common:
 
