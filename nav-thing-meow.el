@@ -188,7 +188,7 @@
   (let* ((b-re (cadr x))
          (f-re (caddr x)))
   (cons
-   (lambda () (meow--thing-regexp-function x near))
+   (lambda () (meow--thing-regexp-function b-re f-re near))
    (cons
      (lambda () (navtm--thing-next-regexp-function 'backward b-re f-re near))
      (lambda () (navtm--thing-next-regexp-function 'forward b-re f-re near))))))
