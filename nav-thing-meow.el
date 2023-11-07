@@ -343,9 +343,18 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   "Return non-nil if selection is expandable."
   (when (meow-normal-mode-p)
     (when-let ((sel (meow--selection-type)))
-      (let ((type (cdr sel)))
-        (or (member type navtm-expandable-types)
-	    (member type navtm-expandable-things))))))
+      (let* ((type (cdr sel)))
+        (alist-get type meow-expand-hint-counts nil nil #'equal)))))
+
+;; (plist-get navtm--thing-registry 'string)
+
+(defun navtm--is-selectable-thing-p (selection)
+  "Return non-nil if SELECTION is an expandable thing."
+  (and (member (car selection)
+	  '(select-backward select-forward))
+       (and meow--expand-nav-function
+	    (car meow--expand-nav-function)
+	    (cdr meow--expand-nav-function))))
 
 (defun navtm-reverse ()
   "Reverse hint directions or exchange point and mark.
@@ -356,20 +365,16 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   (interactive)
   (meow--with-selection-fallback
   (let ((sel (meow--selection-type)))
-    (if (and sel (member (cdr sel) navtm-expandable-things))
-      (if (and (bound-and-true-p navtm-thing-direction)
-	           (eq 'forward navtm-thing-direction))
-        (setq navtm-thing-direction 'backward)
-        (setq navtm-thing-direction 'forward))
+    (if (and sel (navtm--is-selectable-thing-p sel))
+	(let ((select-direction (if (eq (car sel) 'select-backward)
+				    'select-backward 'select-forward)))
+	  (setq meow--selection-type (cons select-direction (cdr sel))))
       (meow--execute-kbd-macro meow--kbd-exchange-point-and-mark))
      (if (member last-command
                '(meow-visit meow-search meow-mark-symbol meow-mark-word))
        (meow--highlight-regexp-in-buffer (car regexp-search-ring))
      (navtm--maybe-highlight-num-positions)))))
 
-(setq navtm-expandable-types '(word line block find till))
-(setq navtm-expandable-things '(string round square curly angle defun
-				paragraph sentence))
 (setq meow-expand-hint-counts '(
   (word . 30) (line . 30) (block . 30) (find . 30) (till . 30) (string . 30)
   (round . 30) (square . 30) (curly . 30) (angle . 30) (defun . 30)
@@ -411,7 +416,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
              (region-active-p)
              (meow--selection-type))
     (let* ((n (or n (string-to-number (char-to-string last-input-event)))))
-      (if (not (member (cdr (meow--selection-type)) navtm-expandable-things))
+      (if (not (navtm--is-selectable-thing-p (meow--selection-type)))
           (meow-expand n)
         (let* (
 	      (nav-function (if (meow--direction-backward-p)
@@ -439,21 +444,17 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
 (defun meow--direction-backward-p ()
   "Return whether we have a backward selection."
-  (let ((sel (meow--selection-type)))
-    (if (and sel (member (cdr sel) navtm-expandable-things))
-      (and (region-active-p) (bound-and-true-p navtm-thing-direction)
-	       (eq 'backward navtm-thing-direction))
-      (and (region-active-p) (> (mark) (point))))))
+    (and (region-active-p)
+    (if (navtm--is-selectable-thing-p (meow--selection-type))
+      (eq 'select-backward (car (meow--selection-type)))
+      (> (mark) (point)))))
 
 (defun meow--direction-forward-p ()
   "Return whether we have a forward selection."
-  (let ((sel (meow--selection-type)))
-    (if (and sel (member (cdr sel) navtm-expandable-things))
-      (and (region-active-p) (bound-and-true-p navtm-thing-direction)
-	       (eq 'forward navtm-thing-direction))
-      (and (region-active-p) (<= (mark) (point))))))
-
-
+    (and (region-active-p)
+    (if (navtm--is-selectable-thing-p (meow--selection-type))
+      (eq 'select-forward (car (meow--selection-type)))
+      (<= (mark) (point)))))
 
 (provide 'nav-thing-meow)
 ;;; nav-thing-meow.el ends here
