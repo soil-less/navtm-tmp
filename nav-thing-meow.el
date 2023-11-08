@@ -427,7 +427,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 		       ((and (navtm--is-expandable-thing-p) backward)
 			(lambda() (goto-char (car (funcall nav-function)))))
 		       ((navtm--is-expandable-thing-p)
-			(lambda() (goto-char (cdr (funcall nav-function)))))
+			(lambda() (goto-char (car (funcall nav-function)))))
 		       (t nav-function))))
     (meow--highlight-num-positions-1 nav-function faces bound)
     (when meow--highlight-timer
@@ -471,6 +471,36 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 			   (cdr (assoc thing meow-char-thing-table)))
       (navtm--maybe-highlight-num-positions))))
 
+(defun navtm-beginning-of-thing (thing)
+  "Select to the beginning of THING."
+  (interactive (list (meow-thing-prompt "Beginning of: ")))
+  (save-window-excursion
+    (let* ((back (equal 'backward (meow--thing-get-direction 'beginning)))
+          (bounds (navtm--parse-inner-of-thing-char thing back)))
+      (when bounds
+        (thread-first
+          (meow--make-selection (cons 'expand
+				      (cdr (assoc thing meow-char-thing-table)))
+                                (if back (point) (car bounds))
+                                (if back (car bounds) (point)))
+          (meow--select))
+	(navtm--maybe-highlight-num-positions)))))
+
+(defun navtm-end-of-thing (thing)
+  "Select to the beginning of THING."
+  (interactive (list (meow-thing-prompt "End of: ")))
+  (save-window-excursion
+    (let* ((back (equal 'backward (meow--thing-get-direction 'end)))
+          (bounds (navtm--parse-inner-of-thing-char thing back)))
+      (when bounds
+        (thread-first
+          (meow--make-selection (cons 'expand
+				      (cdr (assoc thing meow-char-thing-table)))
+                                (if back (cdr bounds) (point))
+                                (if back (point) (cdr bounds)))
+          (meow--select))
+	(navtm--maybe-highlight-num-positions)))))
+
 (defun navtm--thing-set-nav-functions (thing inner)
   "Set nav-functions corresponding to INNER THING."
   (let* ((thing-functions (plist-get navtm--thing-registry thing))
@@ -480,13 +510,18 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 	 (next (nth 2 function-list)))
     (setq meow--expand-nav-function (cons prev next))))
 
-(defun navtm--parse-inner-of-thing-char (ch)
-  "Parse inner of thing correcponding to CH."
+(defun navtm--parse-inner-of-thing-char (ch &optional backward)
+  "Parse inner of thing corresponding to CH.
+
+   If none is at point, return the next/previous one.
+   If BACKWARD is non-nil, return previous, otherwise next."
   (when-let ((ch-to-thing (assoc ch meow-char-thing-table)))
     (let*
 	((thing (cdr ch-to-thing))
 	 (range-bounds (navtm--parse-range-of-thing thing t))
-	 (next-bounds (navtm--parse-next-of-thing thing t)))
+	 (next-bounds (if backward
+                          (navtm--parse-prev-of-thing thing t)
+                        (navtm--parse-next-of-thing thing t))))
       (cond
        ((and range-bounds
 	     (eq (car range-bounds) (cdr range-bounds))
