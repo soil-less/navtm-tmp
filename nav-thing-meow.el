@@ -31,37 +31,33 @@
 	  (cons (+ (car bounds) 1) (- (cdr bounds) 1))
 	bounds))))
 
-(defun navtm--thing-next-inner-string (&optional return-bounds)
+(defun navtm--thing-next-inner-string ()
   "Return the point or the bounds of the next inner string.
 
    RETURN-BOUNDS if nil or omitted return point,
    if t return bounds."
-  (let ((bounds (navtm--thing-next-string 'forward 'inner)))
-    (if return-bounds bounds (car bounds))))
+  (navtm--thing-next-string 'forward 'inner))
 
-(defun navtm--thing-prev-inner-string (&optional return-bounds)
+(defun navtm--thing-prev-inner-string ()
   "Return the point or the bounds of the previous inner string.
 
    RETURN-BOUNDS if nil or omitted return point,
    if t return bounds."
-  (let ((bounds (navtm--thing-next-string 'backward 'inner)))
-    (if return-bounds bounds (car bounds))))
+  (navtm--thing-next-string 'backward 'inner))
 
-(defun navtm--thing-next-bounds-string (&optional return-bounds)
+(defun navtm--thing-next-bounds-string ()
   "Return the point or the bounds of the next string.
 
    RETURN-BOUNDS if nil or omitted return point,
    if t return bounds."
-  (let ((bounds (navtm--thing-next-string 'forward 'bounds)))
-    (if return-bounds bounds (car bounds))))
+  (navtm--thing-next-string 'forward 'bounds))
 
-(defun navtm--thing-prev-bounds-string (&optional return-bounds)
+(defun navtm--thing-prev-bounds-string ()
   "Return the point or the bounds of the previous string.
 
    RETURN-BOUNDS if nil or omitted return point,
    if t return bounds."
-  (let ((bounds (navtm--thing-next-string 'backward 'bounds)))
-    (if return-bounds bounds (car bounds))))
+  (navtm--thing-next-string 'backward 'bounds))
 
 ;;; Pairs:
 (defun navtm--thing-next-pair-function (direction push pop inner)
@@ -329,10 +325,10 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
 ;; (navtm-thing-register
 ;;  'string
-;;  '(functions #'meow--inner-of-string
-;;    #'navtm--thing-prev-inner-string #'navtm--thing-next-inner-string)
-;;  '(functions #'meow--bounds-of-string
-;;    #'navtm--thing-prev-bounds-string #'navtm--thing-next-bounds-string))
+;;  '(functions meow--inner-of-string
+;;    navtm--thing-prev-inner-string navtm--thing-next-inner-string)
+;;  '(functions meow--bounds-of-string
+;;    navtm--thing-prev-bounds-string navtm--thing-next-bounds-string))
 
 ;; BELOW NOT CHANGED FROM FIRST IMPL, PLEASE DISREGARD FOR NOW
 ;;; Common:
