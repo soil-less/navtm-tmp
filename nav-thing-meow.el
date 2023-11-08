@@ -347,7 +347,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   "Return non-nil if SELECTION is an expandable thing."
   (let ((sel-type (meow--selection-type)))
     (and sel-type
-         (plist-get navtm--thing-registry sel-type)
+         (plist-get navtm--thing-registry (cdr sel-type))
          (and meow--expand-nav-function
 	    (car meow--expand-nav-function)
 	    (cdr meow--expand-nav-function)))))
