@@ -100,26 +100,25 @@
               (cons (- (car bounds) 1) (+ (cdr bounds) 1))))))))
 
 (defun navtm--thing-make-pair-function (x near)
-  "Return cons cell of function for pair X.
+  "Return list of function for pair X.
 
    X is a pair of string token lists, the tokens in the first list are used to
    find beginning, the token in second list are used to find end.
    If NEAR is non-nil we use the point of near end of match,
    otherwise point of far end of match.
 
-   Cons cell returned is of the form :
-   (pair-function . (prev-pair-function . next-pair-function))."
+   List returned is of the form :
+   (pair-function prev-pair-function next-pair-function)."
   (let* ((push-token (let ((tokens (cadr x)))
                        (string-join (mapcar #'regexp-quote tokens) "\\|")))
          (pop-token (let ((tokens (caddr x)))
                       (string-join (mapcar #'regexp-quote tokens) "\\|"))))
-    (cons
+    (list
      (lambda () (meow--thing-pair-function push-token pop-token near))
-     (cons
-      (lambda () (navtm--thing-next-pair-function
-		   'backward push-token pop-token near))
-      (lambda () (navtm--thing-next-pair-function
-		   'forward push-token pop-token near))))))
+     (lambda () (navtm--thing-next-pair-function
+                 'backward push-token pop-token near))
+     (lambda () (navtm--thing-next-pair-function
+                 'forward push-token pop-token near)))))
 
 ;;; Syntax:
 (defun navtm--thing-next-syntax-function (direction syntax)
@@ -146,15 +145,14 @@
             (cons (point) match-start)))))))
 
 (defun navtm--thing-make-syntax-function (x)
-  "Return cons cell of function for syntax X.
+  "Return list of functions for syntax X.
 
-   Cons cell returned is of the form :
+   List returned is of the form :
    (syntax-function . (prev-syntax-function . next-syntax-function))."
-  (cons
+  (list
    (lambda () (meow--thing-syntax-function x))
-   (cons
-     (lambda () (navtm--thing-next-syntax-function 'backward x))
-     (lambda () (navtm--thing-next-syntax-function 'forward x)))))
+   (lambda () (navtm--thing-next-syntax-function 'backward x))
+   (lambda () (navtm--thing-next-syntax-function 'forward x))))
 
 ;;; Regexps:
 (defun navtm--thing-next-regexp-function (direction b-re f-re near)
@@ -176,22 +174,21 @@
 	(meow--thing-regexp-function b-re f-re near)))))
 
 (defun navtm--thing-make-regexp-function (x near)
-  "Return cons cell of function for regexp X.
+  "Return list of function for regexp X.
 
    X is a pair of regexp (b-re f-re) with b-re used for beginning and
    f-re used for end.
    If NEAR is non-nil we use the point of near end of match,
    otherwise point of far end of match.
 
-   Cons cell returned is of the form :
-   (regexp-function . (prev-regexp-function . next-regexp-function))."
+   List returned is of the form :
+   (regexp-function prev-regexp-function next-regexp-function)."
   (let* ((b-re (cadr x))
          (f-re (caddr x)))
-  (cons
+  (list
    (lambda () (meow--thing-regexp-function b-re f-re near))
-   (cons
-     (lambda () (navtm--thing-next-regexp-function 'backward b-re f-re near))
-     (lambda () (navtm--thing-next-regexp-function 'forward b-re f-re near))))))
+   (lambda () (navtm--thing-next-regexp-function 'backward b-re f-re near))
+   (lambda () (navtm--thing-next-regexp-function 'forward b-re f-re near)))))
 
 ;;; Symbols
 (defun navtm--thing-next-symbol-function (direction x forward-op)
@@ -202,85 +199,82 @@
       (bounds-of-thing-at-point x))))
 
 (defun navtm--thing-make-symbol-function (x)
-  "Return cons cell of function for symbol X.
+  "Return list of function for symbol X.
 
-   Cons cell returned is of the form :
-   (symbol-function . (prev-symbol-function . next-symbol-function))."
+   List returned is of the form :
+   (symbol-function prev-symbol-function next-symbol-function).
+   If symbol X has neither a forward-op property or a function named
+   forward-X, a lambda returning nil is used instead."
   (let ((forward-op (or (get x 'forward-op)
 			(intern-soft (format "forward-%s" x)))))
-    (cons
+    (unless (functionp forward-op)
+      (message "meow-thing-register:\
+                No forward-op for symbol %s and no forward-%s found.\
+                Navigation/expansions to %s will not be available.\
+                Consider registering %s as functions." x x x x))
+    (list
       (lambda () (bounds-of-thing-at-point x))
       (if (functionp forward-op)
-	  (cons
-	   (lambda ()
-	     (navtm--thing-next-symbol-function 'backward x forward-op))
-	   (lambda ()
-	     (navtm--thing-next-symbol-function 'forward x forward-op)))
-        (progn
-	  (message "meow-thing-register:\
-                    No forward-op for symbol %s and no forward-%s found.\
-                    Navigation/expansions to %s will not be available.\
-                    Consider registering %s as functions" x x x x)
-          (cons (lambda() 'nil)
-		(lambda() 'nil)))))))
+	  (lambda () (navtm--thing-next-symbol-function 'backward x forward-op))
+	(lambda() 'nil))
+      (if (functionp forward-op)
+	  (lambda () (navtm--thing-next-symbol-function 'forward x forward-op))
+	(lambda() 'nil)))))
 
 ;;; Function
 (defun navtm--thing-make-function-function (x)
-  "Return cons cell of function for function X.
+  "Return list of function for function X.
 
-   Cons cell returned is of the form :
-   (select-function . (prev-function . next-function))."
+   List returned is of the form :
+   (select-function prev-function next-function)."
   (let*
    ((prev-next (eq (length x) 4))
-    (selection (nth 1 x))
+    (selection (if (eq (length x) 1) (nth 0 x) (nth 1 x)))
     (prev (if prev-next (nth 2 x) (lambda() 'nil)))
     (next (if prev-next (nth 3 x) (lambda() 'nil))))
-   (cons selection (cons prev next))))
+   (list selection prev next)))
 
 ;;; Registry
 (defvar navtm--thing-registry nil
   "Thing registry.
 
 This is a plist mapping from thing to :
-\((inner-fn . (prev-inner-fn . next-inner-fn))
- . (bounds-fn . (prev-bounds-fn . next-bounds-fn)))
+\((inner-fn prev-inner-fn next-inner-fn)
+  (bounds-fn prev-bounds-fn next-bounds-fn))
 
 All of inner-fn, prev-inner-fn, next-inner-fn, bounds-fn, prev-bounds-fn and
 next-bounds-fn return a cons of (start . end) for that thing.")
 
-(defun navtm--thing-register (thing inner-fn bounds-fn)
-  "Register INNER-FN and BOUNDS-FN to a THING."
+(defun navtm--thing-register (thing inner-fn-list bounds-fn-list)
+  "Register INNER-FN-LIST and BOUNDS-FN-LIST to a THING."
   (setq navtm--thing-registry
         (plist-put navtm--thing-registry
                    thing
-                   (cons inner-fn bounds-fn))))
+                   (list inner-fn-list bounds-fn-list))))
 
 (defun navtm--parse-range-of-thing (thing inner)
   "Parse either inner or bounds of THING.
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (if inner
-        (funcall (car (car bounds-fn-pair)))
-      (funcall (car (cdr bounds-fn-pair))))))
+    (let ((function-list (if inner (car bounds-fn-pair) (cdr bounds-fn-pair))))
+        (funcall (car function-list)))))
 
 (defun navtm--parse-prev-of-thing (thing inner)
   "Parse either inner or bounds of previous THING.
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (if inner
-        (funcall (car (cdr (car bounds-fn-pair))))
-      (funcall (car (cdr (cdr bounds-fn-pair)))))))
+    (let ((function-list (if inner (car bounds-fn-pair) (cdr bounds-fn-pair))))
+        (funcall (nth 1 function-list)))))
 
 (defun navtm--parse-next-of-thing (thing inner)
   "Parse either inner or bounds of next THING.
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (if inner
-        (funcall (cdr (cdr (car bounds-fn-pair))))
-      (funcall (cdr (cdr (cdr bounds-fn-pair)))))))
+    (let ((function-list (if inner (car bounds-fn-pair) (cdr bounds-fn-pair))))
+        (funcall (nth 2 function-list)))))
 
 (defun navtm--thing-parse (x near)
   "Parse thing X according to type.
@@ -288,10 +282,10 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   NEAR is non-nil for inner."
   (cond
    ((functionp x)
-    x)
+    (navtm--thing-make-function-function (list x)))
    ((symbolp x)
     (navtm--thing-make-symbol-function x))
-   ((equal 'function (car x))
+   ((equal 'functions (car x))
     (navtm--thing-make-function-function x))
    ((equal 'syntax (car x))
     (navtm--thing-make-syntax-function x))
@@ -302,15 +296,16 @@ next-bounds-fn return a cons of (start . end) for that thing.")
    ((listp x)
     (meow--thing-parse-multi x near))
    (t
-    (lambda ()
-      (message "Meow: THING definition broken")
-      (cons (point) (point))))))
+    (list (lambda () (message "Meow: THING definition broken")
+	             (cons (point) (point)))
+	  (lambda () 'nil)
+	  (lambda () 'nil)))))
 
 (defun navtm-thing-register (thing inner bounds)
   "Temporary docstring THING INNER BOUNDS."
-      (let ((inner-fn (navtm--thing-parse inner t))
-          (bounds-fn (navtm--thing-parse bounds nil)))
-      (navtm--thing-register thing inner-fn bounds-fn)))
+  (let ((inner-fn-list (navtm--thing-parse inner t))
+        (bounds-fn-list (navtm--thing-parse bounds nil)))
+    (navtm--thing-register thing inner-fn-list bounds-fn-list)))
 
 ;;; Things definition:
 
@@ -334,9 +329,9 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
 ;; (navtm-thing-register
 ;;  'string
-;;  '(function #'meow--inner-of-string
+;;  '(functions #'meow--inner-of-string
 ;;    #'navtm--thing-prev-inner-string #'navtm--thing-next-inner-string)
-;;  '(function #'meow--bounds-of-string
+;;  '(functions #'meow--bounds-of-string
 ;;    #'navtm--thing-prev-bounds-string #'navtm--thing-next-bounds-string))
 
 ;; BELOW NOT CHANGED FROM FIRST IMPL, PLEASE DISREGARD FOR NOW
@@ -380,7 +375,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   (let ((sel (meow--selection-type)))
     (if (and sel (navtm--is-selectable-thing-p))
 	(let ((select-direction (if (eq (car sel) 'select-backward)
-				    'select-backward 'select-forward)))
+				    'select-forward 'select-backward)))
 	  (setq meow--selection-type (cons select-direction (cdr sel))))
       (meow--execute-kbd-macro meow--kbd-exchange-point-and-mark))
      (if (member last-command
