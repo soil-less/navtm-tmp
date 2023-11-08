@@ -471,23 +471,27 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   (when (and meow--expand-nav-function
              (region-active-p)
              (meow--selection-type))
-    (let* ((n (or n (string-to-number (char-to-string last-input-event)))))
+    (let* ((n (or n (string-to-number (char-to-string last-input-event))))
+	   (n (if (= n 0) 10 n)))
       (if (not (navtm--is-selectable-thing-p))
           (meow-expand n)
-        (let* (
-	      (nav-function (if (meow--direction-backward-p)
-			       (car meow--expand-nav-function)
-			       (cdr meow--expand-nav-function)))
-	      (sel-type (cons meow-expand-selection-type
-			      (cdr (meow--selection-type)))))
-          (save-mark-and-excursion
-	        (dotimes (_ n)
-		  (setq +tempbounds (funcall nav-function 't))))
-	      (when (not (eq nil +tempbounds))
+        (let*
+	 ((nav-function (if (meow--direction-backward-p)
+                            (car meow--expand-nav-function)
+                          (cdr meow--expand-nav-function)))
+	  (sel-type (meow--selection-type))
+	  (bounds
+            (save-mark-and-excursion
+	      (dotimes (_ (- n 1))
+                (let ((temp-bounds (funcall nav-function)))
+                   (when temp-bounds (goto-char (car temp-bounds)))))
+              (funcall nav-function))))
+
+        (when bounds
           (thread-first
 	    (meow--make-selection sel-type
-				  (cdr +tempbounds)
-				  (car +tempbounds))
+				  (cdr bounds)
+				  (car bounds))
             (meow--select)))
 	      (navtm--maybe-highlight-num-positions
 	       meow--expand-nav-function))))))
