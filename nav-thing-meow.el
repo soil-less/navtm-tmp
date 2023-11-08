@@ -32,31 +32,19 @@
 	bounds))))
 
 (defun navtm--thing-next-inner-string ()
-  "Return the point or the bounds of the next inner string.
-
-   RETURN-BOUNDS if nil or omitted return point,
-   if t return bounds."
+  "Return the bounds of the next inner string."
   (navtm--thing-next-string 'forward 'inner))
 
 (defun navtm--thing-prev-inner-string ()
-  "Return the point or the bounds of the previous inner string.
-
-   RETURN-BOUNDS if nil or omitted return point,
-   if t return bounds."
+  "Return the bounds of the previous inner string."
   (navtm--thing-next-string 'backward 'inner))
 
 (defun navtm--thing-next-bounds-string ()
-  "Return the point or the bounds of the next string.
-
-   RETURN-BOUNDS if nil or omitted return point,
-   if t return bounds."
+  "Return the bounds of the next string."
   (navtm--thing-next-string 'forward 'bounds))
 
 (defun navtm--thing-prev-bounds-string ()
-  "Return the point or the bounds of the previous string.
-
-   RETURN-BOUNDS if nil or omitted return point,
-   if t return bounds."
+  "Return the bounds of the previous string."
   (navtm--thing-next-string 'backward 'bounds))
 
 ;;; Pairs:
