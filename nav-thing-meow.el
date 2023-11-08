@@ -351,13 +351,23 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
 ;; (plist-get navtm--thing-registry 'string)
 
-(defun navtm--is-selectable-thing-p (selection)
-  "Return non-nil if SELECTION is an expandable thing."
-  (and (member (car selection)
-	  '(select-backward select-forward))
-       (and meow--expand-nav-function
+(defun navtm--is-selectable-thing-p ()
+  "Return non-nil if SELECTION is an selectable thing."
+  (let ((sel-type (meow--selection-type)))
+    (and sel-type
+	 (member (car sel-type) '(select-backward select-forward))
+         (and meow--expand-nav-function
 	    (car meow--expand-nav-function)
-	    (cdr meow--expand-nav-function))))
+	    (cdr meow--expand-nav-function)))))
+
+(defun navtm--is-expandable-thing-p ()
+  "Return non-nil if SELECTION is an expandable thing."
+  (let ((sel-type (meow--selection-type)))
+    (and sel-type
+         (plist-get navtm--thing-registry sel-type)
+         (and meow--expand-nav-function
+	    (car meow--expand-nav-function)
+	    (cdr meow--expand-nav-function)))))
 
 (defun navtm-reverse ()
   "Reverse hint directions or exchange point and mark.
@@ -368,7 +378,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   (interactive)
   (meow--with-selection-fallback
   (let ((sel (meow--selection-type)))
-    (if (and sel (navtm--is-selectable-thing-p sel))
+    (if (and sel (navtm--is-selectable-thing-p))
 	(let ((select-direction (if (eq (car sel) 'select-backward)
 				    'select-backward 'select-forward)))
 	  (setq meow--selection-type (cons select-direction (cdr sel))))
@@ -419,7 +429,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
              (region-active-p)
              (meow--selection-type))
     (let* ((n (or n (string-to-number (char-to-string last-input-event)))))
-      (if (not (navtm--is-selectable-thing-p (meow--selection-type)))
+      (if (not (navtm--is-selectable-thing-p))
           (meow-expand n)
         (let* (
 	      (nav-function (if (meow--direction-backward-p)
@@ -448,14 +458,14 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 (defun meow--direction-backward-p ()
   "Return whether we have a backward selection."
     (and (region-active-p)
-    (if (navtm--is-selectable-thing-p (meow--selection-type))
+    (if (navtm--is-selectable-thing-p)
       (eq 'select-backward (car (meow--selection-type)))
       (> (mark) (point)))))
 
 (defun meow--direction-forward-p ()
   "Return whether we have a forward selection."
     (and (region-active-p)
-    (if (navtm--is-selectable-thing-p (meow--selection-type))
+    (if (navtm--is-selectable-thing-p)
       (eq 'select-forward (car (meow--selection-type)))
       (<= (mark) (point)))))
 
