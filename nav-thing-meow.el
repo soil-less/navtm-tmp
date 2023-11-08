@@ -372,16 +372,22 @@ next-bounds-fn return a cons of (start . end) for that thing.")
   This command supports `meow-selection-command-fallback' ?"
   (interactive)
   (meow--with-selection-fallback
-  (let ((sel (meow--selection-type)))
-    (if (and sel (navtm--is-selectable-thing-p))
-	(let ((select-direction (if (eq (car sel) 'select-backward)
-				    'select-forward 'select-backward)))
-	  (setq meow--selection-type (cons select-direction (cdr sel))))
+    (if (navtm--is-selectable-thing-p)
+	(let*
+	 ((sel meow--selection)
+	  (sel-type (car (car sel)))
+	  (sel-thing (cdr (car sel)))
+	  (sel-start (car (cdr sel)))
+	  (sel-end (cdr (cdr sel)))
+	  (sel-type (if (eq sel-type 'select-backward)
+			    'select-forward 'select-backward)))
+	  (setq meow--selection
+		(list (cons sel-type sel-thing) sel-start sel-end)))
       (meow--execute-kbd-macro meow--kbd-exchange-point-and-mark))
      (if (member last-command
                '(meow-visit meow-search meow-mark-symbol meow-mark-word))
        (meow--highlight-regexp-in-buffer (car regexp-search-ring))
-     (navtm--maybe-highlight-num-positions)))))
+     (navtm--maybe-highlight-num-positions))))
 
 (setq meow-expand-hint-counts '(
   (word . 30) (line . 30) (block . 30) (find . 30) (till . 30) (string . 30)
