@@ -253,7 +253,8 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (let ((function-list (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
+    (let ((function-list
+	   (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
       (funcall (nth 0 function-list)))))
 
 (defun navtm--parse-prev-of-thing (thing inner)
@@ -261,7 +262,8 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (let ((function-list (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
+    (let ((function-list
+	   (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
         (funcall (nth 1 function-list)))))
 
 (defun navtm--parse-next-of-thing (thing inner)
@@ -269,7 +271,8 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (let ((function-list (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
+    (let ((function-list
+	   (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
         (funcall (nth 2 function-list)))))
 
 (defun navtm--thing-parse (x near)
@@ -464,7 +467,8 @@ next-bounds-fn return a cons of (start . end) for that thing.")
     (let ((back (equal 'backward (meow--thing-get-direction 'inner)))
           (bounds (navtm--parse-inner-of-thing-char thing))
 	  (back 'nil))
-      (navtm--select-thing back bounds (cdr (assoc thing meow-char-thing-table)))
+      (navtm--select-thing back bounds
+			   (cdr (assoc thing meow-char-thing-table)))
       (navtm--maybe-highlight-num-positions))))
 
 (defun navtm-bounds-of-thing (thing)
@@ -474,13 +478,15 @@ next-bounds-fn return a cons of (start . end) for that thing.")
     (let ((back (equal 'backward (meow--thing-get-direction 'bounds)))
           (bounds (navtm--parse-bounds-of-thing-char thing))
 	  (back 'nil))
-      (navtm--select-thing back bounds (cdr (assoc thing meow-char-thing-table)))
+      (navtm--select-thing back bounds
+			   (cdr (assoc thing meow-char-thing-table)))
       (navtm--maybe-highlight-num-positions))))
 
 (defun navtm--thing-set-nav-functions (thing inner)
   "Set nav-functions corresponding to INNER THING."
   (let* ((thing-functions (plist-get navtm--thing-registry thing))
-	 (function-list (if inner (nth 0 thing-functions) (nth 1 thing-functions)))
+	 (function-list
+	  (if inner (nth 0 thing-functions) (nth 1 thing-functions)))
 	 (prev (nth 1 function-list))
 	 (next (nth 2 function-list)))
     (setq meow--expand-nav-function (cons prev next))))
