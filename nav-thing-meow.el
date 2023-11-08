@@ -406,8 +406,50 @@ next-bounds-fn return a cons of (start . end) for that thing.")
                meow--expand-nav-function)
       (let ((num (alist-get (cdr (meow--selection-type))
 			    meow-expand-hint-counts)))
-        (meow--highlight-num-positions num)))))
+        (navtm--highlight-num-positions num)))))
 
+(defun navtm--highlight-num-positions (num)
+  "Hihlight NUM positions."
+  (setq meow--visual-command this-command)
+  (meow--remove-expand-highlights)
+  (meow--remove-match-highlights)
+  (meow--remove-search-indicator)
+  (let* ((bound (cons (window-start) (window-end)))
+        (faces (seq-take
+                (if (meow--direction-backward-p)
+                    (seq-concatenate
+                     'list
+                     (make-list 10 'meow-position-highlight-reverse-number-1)
+                     (make-list 10 'meow-position-highlight-reverse-number-2)
+                     (make-list 10 'meow-position-highlight-reverse-number-3))
+                  (seq-concatenate
+                   'list
+                   (make-list 10 'meow-position-highlight-number-1)
+                   (make-list 10 'meow-position-highlight-number-2)
+                   (make-list 10 'meow-position-highlight-number-3)))
+                num))
+	(backward (meow--direction-backward-p))
+        (nav-function (if backward
+                          (car meow--expand-nav-function)
+                        (cdr meow--expand-nav-function)))
+        (nav-function (cond
+		       ((navtm--is-selectable-thing-p)
+			(lambda() (car (funcall nav-function))))
+		       ((and (navtm--is-expandable-thing-p) backward)
+			(lambda() (car (funcall nav-function))))
+		       ((navtm--is-expandable-thing-p)
+			(lambda() (cdr (funcall nav-function))))
+		       (t nav-function))))
+    (meow--highlight-num-positions-1 nav-function faces bound)
+    (when meow--highlight-timer
+      (cancel-timer meow--highlight-timer)
+      (setq meow--highlight-timer nil))
+    (setq meow--highlight-timer
+          (run-at-time
+           (time-add (current-time)
+                     (seconds-to-time meow-expand-hint-remove-delay))
+           nil
+           #'meow--remove-expand-highlights))))
 
 (defun navtm-expand-1 () "Expand 1." (interactive) (navtm-expand 1))
 (defun navtm-expand-2 () "Expand 2." (interactive) (navtm-expand 2))
