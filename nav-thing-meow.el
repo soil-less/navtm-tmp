@@ -217,9 +217,12 @@
 	   (lambda ()
 	     (navtm--thing-next-symbol-function 'forward x forward-op)))
         (progn
-	  (display-warning
-	    "Can't determine prev/next functions for thing %s" x)
-          (cons 'nil 'nil))))))
+	  (message "meow-thing-register:\
+                    No forward-op for symbol %s and no forward-%s found.\
+                    Navigation/expansions to %s will not be available.\
+                    Consider registering %s as functions" x x x x)
+          (cons (lambda() 'nil)
+		(lambda() 'nil)))))))
 
 ;;; Function
 (defun navtm--thing-make-function-function (x)
@@ -230,8 +233,8 @@
   (let*
    ((prev-next (eq (length x) 4))
     (selection (nth 1 x))
-    (prev (when prev-next (nth 2 x)))
-    (next (when prev-next (nth 3 x))))
+    (prev (if prev-next (nth 2 x) (lambda() 'nil)))
+    (next (if prev-next (nth 3 x) (lambda() 'nil))))
    (cons selection (cons prev next))))
 
 ;;; Registry
