@@ -452,6 +452,81 @@ next-bounds-fn return a cons of (start . end) for that thing.")
            nil
            #'meow--remove-expand-highlights))))
 
+(defun navtm--select-thing (back bounds thing)
+  "BACK BOUNDS THING."
+  (when bounds
+    (let* ((sel-direction (if back 'select-backward 'select-forward))
+	   (selection (cons sel-direction thing)))
+      (thread-first
+	(meow--make-selection selection (cdr bounds) (car bounds))
+	(meow--select)))))
+
+(defun navtm-inner-of-thing (thing)
+  "Select inner (excluding delimiters) of THING."
+  (interactive (list (meow-thing-prompt "Inner of: ")))
+  (save-window-excursion
+    (let ((back (equal 'backward (meow--thing-get-direction 'inner)))
+          (bounds (navtm--parse-inner-of-thing-char thing))
+	  (back 'nil))
+      (navtm--select-thing back bounds (cdr (assoc thing meow-char-thing-table)))
+      (navtm--maybe-highlight-num-positions))))
+
+(defun navtm-bounds-of-thing (thing)
+  "Select bounds (including delimiters) of THING."
+  (interactive (list (meow-thing-prompt "Bounds of: ")))
+  (save-window-excursion
+    (let ((back (equal 'backward (meow--thing-get-direction 'bounds)))
+          (bounds (navtm--parse-bounds-of-thing-char thing))
+	  (back 'nil))
+      (navtm--select-thing back bounds (cdr (assoc thing meow-char-thing-table)))
+      (navtm--maybe-highlight-num-positions))))
+
+(defun navtm--thing-set-nav-functions (thing inner)
+  "Set nav-functions corresponding to INNER THING."
+  (let* ((thing-functions (plist-get navtm--thing-registry thing))
+	 (function-list (if inner (nth 0 thing-functions) (nth 1 thing-functions)))
+	 (prev (nth 1 function-list))
+	 (next (nth 2 function-list)))
+    (setq meow--expand-nav-function (cons prev next))))
+
+(defun navtm--parse-inner-of-thing-char (ch)
+  "Parse inner of thing correcponding to CH."
+  (when-let ((ch-to-thing (assoc ch meow-char-thing-table)))
+    (let*
+	((thing (cdr ch-to-thing))
+	 (range-bounds (navtm--parse-range-of-thing thing t))
+	 (next-bounds (navtm--parse-next-of-thing thing t)))
+      (cond
+       ((and range-bounds
+	     (eq (car range-bounds) (cdr range-bounds))
+	     (not next-bounds))
+	range-bounds)
+       ((and range-bounds (not (eq (car range-bounds) (cdr range-bounds))))
+	(navtm--thing-set-nav-functions thing t)
+	range-bounds)
+       (next-bounds
+	(navtm--thing-set-nav-functions thing t)
+	next-bounds)))))
+
+(defun navtm--parse-bounds-of-thing-char (ch)
+  "Parse inner of thing correcponding to CH."
+  (when-let ((ch-to-thing (assoc ch meow-char-thing-table)))
+    (let*
+	((thing (cdr ch-to-thing))
+	 (range-bounds (navtm--parse-range-of-thing thing 'nil))
+	 (next-bounds (navtm--parse-next-of-thing thing 'nil)))
+      (cond
+       ((and range-bounds
+	     (eq (car range-bounds) (cdr range-bounds))
+	     (not next-bounds))
+	range-bounds)
+       ((and range-bounds (not (eq (car range-bounds) (cdr range-bounds))))
+	(navtm--thing-set-nav-functions thing 'nil)
+	range-bounds)
+       (next-bounds
+	(navtm--thing-set-nav-functions thing 'nil)
+	next-bounds)))))
+
 (defun navtm-expand-1 () "Expand 1." (interactive) (navtm-expand 1))
 (defun navtm-expand-2 () "Expand 2." (interactive) (navtm-expand 2))
 (defun navtm-expand-3 () "Expand 3." (interactive) (navtm-expand 3))
