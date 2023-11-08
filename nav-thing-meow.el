@@ -67,9 +67,10 @@
         (if (eq direction 'forward)
              ;; inner ; bounds
           (if inner '1 '2) ;; forward
-          (if inner -1 '0) ;; backward
+          (if inner -1 '-1) ;; backward
       ))
-      (start (if start-bounds (+ (car start-bounds) start-offset) (point)))
+      ;; (start (if start-bounds (+ (car start-bounds) start-offset) (point)))
+      (start (+ (point) start-offset))
       (search-count (if (eq direction 'forward) '1 '-1))
       (search-offset (if (eq direction 'forward) '0 '1)))
       (goto-char start)
