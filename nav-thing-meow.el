@@ -257,15 +257,15 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (let ((function-list (if inner (car bounds-fn-pair) (cdr bounds-fn-pair))))
-        (funcall (car function-list)))))
+    (let ((function-list (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
+      (funcall (nth 0 function-list)))))
 
 (defun navtm--parse-prev-of-thing (thing inner)
   "Parse either inner or bounds of previous THING.
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (let ((function-list (if inner (car bounds-fn-pair) (cdr bounds-fn-pair))))
+    (let ((function-list (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
         (funcall (nth 1 function-list)))))
 
 (defun navtm--parse-next-of-thing (thing inner)
@@ -273,7 +273,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 
    If INNER is non-nil then parse inner."
   (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
-    (let ((function-list (if inner (car bounds-fn-pair) (cdr bounds-fn-pair))))
+    (let ((function-list (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
         (funcall (nth 2 function-list)))))
 
 (defun navtm--thing-parse (x near)
