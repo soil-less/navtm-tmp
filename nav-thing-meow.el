@@ -78,6 +78,65 @@
 (defun navtm--thing-next-inner-defun ()
   "Next inner defun."
   (navtm--thing-next-defun 'forward))
+
+;;; Paragraphs
+(defun navtm--thing-next-paragraph (direction)
+  "Return the point/bounds of the next paragraph in direction.
+
+   DIRECTION can either be `forward' or `backward'."
+  (save-mark-and-excursion
+    (let* (
+      (start-bounds (bounds-of-thing-at-point 'paragraph))
+      (start (if (eq direction 'forward)
+                 (if start-bounds (+ (cdr start-bounds) 1) (point))
+               (if start-bounds (- (car start-bounds) 1) (point))))
+      (search-count (if (eq direction 'forward) '1 '-1)))
+      (goto-char start)
+      (while (and
+        (not (bounds-of-thing-at-point 'paragraph))
+        (not (eq (point) (progn (forward-line search-count) (point))))))
+      (let ((bounds (bounds-of-thing-at-point 'paragraph)))
+	(when bounds
+          (let ((bounds-beg (if (eq (car bounds) 1) 1 (+ (car bounds) 1)))
+		(bounds-end (cdr bounds)))
+	    (cons bounds-beg bounds-end)))))))
+
+(defun navtm--thing-next-inner-paragraph ()
+  "Return the point or the bounds of the next inner paragraph."
+  (let ((bounds (navtm--thing-next-paragraph 'forward)))
+    (when bounds (cons (car bounds) (cdr bounds)))))
+
+(defun navtm--thing-prev-inner-paragraph ()
+  "Return the point or the bounds of the previous inner paragraph."
+  (let ((bounds (navtm--thing-next-paragraph 'backward)))
+    (when bounds (cons (car bounds) (cdr bounds)))))
+
+(defun navtm--thing-inner-paragraph ()
+  "Select the current inner paragraph."
+  (let ((bounds (bounds-of-thing-at-point 'paragraph)))
+    (when bounds
+      (let ((bounds-beg (if (eq (car bounds) 1) 1 (+ (car bounds) 1)))
+	    (bounds-end (cdr bounds)))
+	  (cons bounds-beg bounds-end)))))
+
+(defun navtm--thing-next-bounds-paragraph ()
+  "Return bounds of the next paragraph."
+  (let ((bounds (navtm--thing-next-paragraph 'forward)))
+    (when bounds (cons (car bounds) (+ (cdr bounds) 1)))))
+
+(defun navtm--thing-prev-bounds-paragraph ()
+  "Return the bounds of the previous paragraph."
+  (let ((bounds (navtm--thing-next-paragraph 'backward)))
+    (when bounds (cons (car bounds) (+ (cdr bounds) 1)))))
+
+(defun navtm--thing-bounds-paragraph ()
+  "Select the current paragraph."
+  (let ((bounds (bounds-of-thing-at-point 'paragraph)))
+    (when bounds
+      (let ((bounds-beg (if (eq (car bounds) 1) 1 (+ (car bounds) 1)))
+	    (bounds-end (+ (cdr bounds) 1)))
+	  (cons bounds-beg bounds-end)))))
+
 ;;; Pairs:
 (defun navtm--thing-next-pair-function (direction push pop inner)
   "Return the next inner/bounds pair in direction.
@@ -350,6 +409,14 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 	     navtm--thing-prev-inner-defun
 	     navtm--thing-next-inner-defun))
 
+(navtm-thing-register
+ 'paragraph
+ '(functions navtm--thing-inner-paragraph
+	     navtm--thing-prev-inner-paragraph
+	     navtm--thing-next-inner-paragraph)
+ '(functions navtm--thing-bounds-paragraph
+	     navtm--thing-prev-bounds-paragraph
+	     navtm--thing-next-bounds-paragraph))
 ;; (navtm-thing-register 'non-whitespace '(syntax . "^-") '(syntax . "^-"))
 
 ;; (navtm-thing-register 'testangle '(regexp "<" ">") '(regexp "<" ">"))
