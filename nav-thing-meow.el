@@ -394,12 +394,7 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 ;; return incorrect results when searching backward.
 ;; (navtm-thing-register 'paragraph 'paragraph 'paragraph)
 
-;; (navtm-thing-register 'sentence 'sentence 'sentence)
-
-;; (navtm-thing-register 'round '(pair ("(") (")")) '(pair ("(") (")")))
-;; (navtm-thing-register 'square '(pair ("[") ("]")) '(pair ("[") ("]")))
-;; (navtm-thing-register 'curly '(pair ("{") ("}")) '(pair ("{") ("}")))
-;; (navtm-thing-register 'angle '(pair ("<") (">")) '(pair ("<") (">")))
+(navtm-thing-register 'sentence 'sentence 'sentence)
 (navtm-thing-register
  'defun
  '(functions navtm--thing-inner-defun
@@ -417,16 +412,22 @@ next-bounds-fn return a cons of (start . end) for that thing.")
  '(functions navtm--thing-bounds-paragraph
 	     navtm--thing-prev-bounds-paragraph
 	     navtm--thing-next-bounds-paragraph))
+
+(navtm-thing-register 'round '(pair ("(") (")")) '(pair ("(") (")")))
+(navtm-thing-register 'square '(pair ("[") ("]")) '(pair ("[") ("]")))
+(navtm-thing-register 'curly '(pair ("{") ("}")) '(pair ("{") ("}")))
+(navtm-thing-register 'angle '(pair ("<") (">")) '(pair ("<") (">")))
+
 ;; (navtm-thing-register 'non-whitespace '(syntax . "^-") '(syntax . "^-"))
 
 ;; (navtm-thing-register 'testangle '(regexp "<" ">") '(regexp "<" ">"))
 
-;; (navtm-thing-register
-;;  'string
-;;  '(functions meow--inner-of-string
-;;    navtm--thing-prev-inner-string navtm--thing-next-inner-string)
-;;  '(functions meow--bounds-of-string
-;;    navtm--thing-prev-bounds-string navtm--thing-next-bounds-string))
+(navtm-thing-register
+ 'string
+ '(functions meow--inner-of-string
+   navtm--thing-prev-inner-string navtm--thing-next-inner-string)
+ '(functions meow--bounds-of-string
+   navtm--thing-prev-bounds-string navtm--thing-next-bounds-string))
 
 ;; BELOW NOT CHANGED FROM FIRST IMPL, PLEASE DISREGARD FOR NOW
 ;;; Common:
