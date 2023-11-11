@@ -47,6 +47,37 @@
   "Return the bounds of the previous string."
   (navtm--thing-next-string 'backward 'bounds))
 
+;;; Defuns:
+(defun navtm--thing-next-defun (direction)
+  "Return the point/bounds of the next defun in direction.
+
+   DIRECTION can either be `forward' or `backward'."
+  (save-mark-and-excursion
+    (let* (
+      (start-bounds (bounds-of-thing-at-point 'defun))
+      (start (if (eq direction 'forward)
+                 (if start-bounds (+ (cdr start-bounds) 1) (point))
+               (if start-bounds (- (car start-bounds) 1) (point))))
+      (search-count (if (eq direction 'forward) '1 '-1)))
+      (goto-char start)
+      (while (and
+        (not (bounds-of-thing-at-point 'defun))
+        (not (eq (point) (progn (forward-line search-count) (point))))))
+      (let ((bounds (bounds-of-thing-at-point 'defun)))
+        (when bounds
+  	(cons (car bounds) (- (cdr bounds) 1)))))))
+
+(defun navtm--thing-inner-defun ()
+  "Bounds of thing at point defun."
+  (bounds-of-thing-at-point 'defun))
+
+(defun navtm--thing-prev-inner-defun ()
+  "Prev inner defun."
+  (navtm--thing-next-defun 'backward))
+
+(defun navtm--thing-next-inner-defun ()
+  "Next inner defun."
+  (navtm--thing-next-defun 'forward))
 ;;; Pairs:
 (defun navtm--thing-next-pair-function (direction push pop inner)
   "Return the next inner/bounds pair in direction.
@@ -310,6 +341,14 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 ;; (navtm-thing-register 'square '(pair ("[") ("]")) '(pair ("[") ("]")))
 ;; (navtm-thing-register 'curly '(pair ("{") ("}")) '(pair ("{") ("}")))
 ;; (navtm-thing-register 'angle '(pair ("<") (">")) '(pair ("<") (">")))
+(navtm-thing-register
+ 'defun
+ '(functions navtm--thing-inner-defun
+	     navtm--thing-prev-inner-defun
+	     navtm--thing-next-inner-defun)
+ '(functions navtm--thing-inner-defun
+	     navtm--thing-prev-inner-defun
+	     navtm--thing-next-inner-defun))
 
 ;; (navtm-thing-register 'non-whitespace '(syntax . "^-") '(syntax . "^-"))
 
