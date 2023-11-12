@@ -649,13 +649,15 @@ next-bounds-fn return a cons of (start . end) for that thing.")
 	(navtm--thing-set-nav-functions thing t)
 	next-bounds)))))
 
-(defun navtm--parse-bounds-of-thing-char (ch)
+(defun navtm--parse-bounds-of-thing-char (ch &optional backward)
   "Parse inner of thing correcponding to CH."
   (when-let ((ch-to-thing (assoc ch meow-char-thing-table)))
     (let*
 	((thing (cdr ch-to-thing))
 	 (range-bounds (navtm--parse-range-of-thing thing 'nil))
-	 (next-bounds (navtm--parse-next-of-thing thing 'nil)))
+	 (next-bounds (if backward
+			  (navtm--parse-prev-of-thing thing 'nil)
+			(navtm--parse-next-of-thing thing 'nil))))
       (cond
        ((and range-bounds
 	     (eq (car range-bounds) (cdr range-bounds))
