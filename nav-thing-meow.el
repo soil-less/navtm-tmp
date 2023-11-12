@@ -271,7 +271,13 @@
 (defun navtm--thing-next-symbol-function (direction x forward-op)
   "Return bounds of next symbol X in DIRECTION using function FORWARD-OP."
   (save-mark-and-excursion
-    (let ((count (if (eq direction 'forward) '1 '-1)))
+    (let
+	((count (if (eq direction 'forward) '1 '-1))
+	 (start-bounds (bounds-of-thing-at-point x)))
+      (when start-bounds
+	(if (eq direction 'forward)
+            (goto-char (+ (cdr start-bounds) 1))
+          (goto-char (- (car start-bounds) 1))))
       (funcall forward-op count)
       (bounds-of-thing-at-point x))))
 
