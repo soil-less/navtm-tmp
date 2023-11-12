@@ -138,41 +138,43 @@
 	  (cons bounds-beg bounds-end)))))
 
 ;;; Pairs:
-(defun navtm--thing-next-pair-function (direction push pop inner)
+(defun navtm--thing-next-pair-function (direction push pop inner
+					    &optional search-pop)
   "Return the next inner/bounds pair in direction.
 
    PUSH is the regexp for the opening pair.
    POP is the regexp for the closing pair.
    INNER is t for inner of pair, nil for bounds of pair.
    DIRECTION is either `forward' or `backward'.
-   Moves the point to the beginning of the match if one is found."
+   If SEARCH-POP is non-nil searches for the next pair using pop-token instead
+   of push-token."
   (save-mark-and-excursion
-    (let* (
-      (p (point))
-      (start-bounds (progn
-               (unless inner (goto-char (+ (point) 1)))
-               (meow--thing-pair-function push pop inner)
-      ))
-      (start-offset
-        (if (eq direction 'forward)
-             ;; inner ; bounds
-          (if inner '1 '2) ;; forward
-          (if inner -1 '-1) ;; backward
-      ))
-      ;; (start (if start-bounds (+ (car start-bounds) start-offset) (point)))
-      (start (+ (point) start-offset))
-      (search-count (if (eq direction 'forward) '1 '-1))
-      (search-offset (if (eq direction 'forward) '0 '1)))
-      (goto-char start)
-      (while (and
-        (not (eq (point) (car (meow--thing-pair-function push pop t))))
-        (and (re-search-forward push nil t search-count)
-             (goto-char (+ (point) search-offset)))))
-      (let (( bounds (meow--thing-pair-function push pop t)))
-        (when (and bounds (not (eq (car bounds) p)))
-            (if inner
-                bounds
-              (cons (- (car bounds) 1) (+ (cdr bounds) 1))))))))
+    (let*
+     ((forward (eq direction 'forward))
+      (start-bounds
+        (progn
+          (when (and forward (not inner) (not search-pop))
+	    (goto-char (+ (point) 1)))
+          (meow--thing-pair-function push pop t)))
+      (match-offset (if forward (if search-pop '-1 '0) (if search-pop '0 '1)))
+      (search-count (if forward '1 '-1))
+      (token (if search-pop pop push)))
+     (while
+       (and
+         (re-search-forward token nil t search-count)
+	 (not (save-mark-and-excursion
+	        (goto-char (+ (point) match-offset))
+	        (let ((found-bounds (meow--thing-pair-function push pop t)))
+	             (and found-bounds
+		          (or (eq (point) (car found-bounds))
+		              (eq (point) (cdr found-bounds)))
+		          (not (equal found-bounds start-bounds))))))))
+     (goto-char (+ (point) match-offset))
+     (let (( bounds (meow--thing-pair-function push pop t)))
+       (when (and bounds (not (eq bounds start-bounds)))
+           (if inner
+               bounds
+             (cons (- (car bounds) 1) (+ (cdr bounds) 1))))))))
 
 (defun navtm--thing-make-pair-function (x near)
   "Return list of function for pair X.
