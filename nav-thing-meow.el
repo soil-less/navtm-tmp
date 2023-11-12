@@ -186,16 +186,22 @@
 
    List returned is of the form :
    (pair-function prev-pair-function next-pair-function)."
-  (let* ((push-token (let ((tokens (cadr x)))
-                       (string-join (mapcar #'regexp-quote tokens) "\\|")))
-         (pop-token (let ((tokens (caddr x)))
-                      (string-join (mapcar #'regexp-quote tokens) "\\|"))))
-    (list
-     (lambda () (meow--thing-pair-function push-token pop-token near))
-     (lambda () (navtm--thing-next-pair-function
-                 'backward push-token pop-token near))
-     (lambda () (navtm--thing-next-pair-function
-                 'forward push-token pop-token near)))))
+  (let*
+   ((push-token (let ((tokens (cadr x)))
+                  (string-join (mapcar #'regexp-quote tokens) "\\|")))
+    (pop-token (let ((tokens (caddr x)))
+                 (string-join (mapcar #'regexp-quote tokens) "\\|")))
+    (selection (lambda()
+		 (meow--thing-pair-function push-token pop-token near)))
+    (prev (lambda() (navtm--thing-next-pair-function
+                      'backward push-token pop-token near)))
+    (next (lambda() (navtm--thing-next-pair-function
+                      'forward push-token pop-token near)))
+    (startof (lambda() (car (navtm--thing-next-pair-function
+			     'backward push-token pop-token near))))
+    (endof (lambda() (cdr (navtm--thing-next-pair-function
+			   'forward push-token pop-token near 'search-pop)))))
+    (list selection prev next startof endof)))
 
 ;;; Syntax:
 (defun navtm--thing-next-syntax-function (direction syntax)
@@ -226,10 +232,13 @@
 
    List returned is of the form :
    (syntax-function . (prev-syntax-function . next-syntax-function))."
-  (list
-   (lambda () (meow--thing-syntax-function x))
-   (lambda () (navtm--thing-next-syntax-function 'backward x))
-   (lambda () (navtm--thing-next-syntax-function 'forward x))))
+  (let*
+   ((selection (lambda () (meow--thing-syntax-function x)))
+    (prev (lambda () (navtm--thing-next-syntax-function 'backward x)))
+    (next (lambda () (navtm--thing-next-syntax-function 'forward x)))
+    (startof (lambda() (car (funcall prev))))
+    (endof (lambda() (cdr (funcall next)))))
+  (list selection prev next startof endof)))
 
 ;;; Regexps:
 (defun navtm--thing-next-regexp-function (direction b-re f-re near)
@@ -260,12 +269,17 @@
 
    List returned is of the form :
    (regexp-function prev-regexp-function next-regexp-function)."
-  (let* ((b-re (cadr x))
-         (f-re (caddr x)))
-  (list
-   (lambda () (meow--thing-regexp-function b-re f-re near))
-   (lambda () (navtm--thing-next-regexp-function 'backward b-re f-re near))
-   (lambda () (navtm--thing-next-regexp-function 'forward b-re f-re near)))))
+  (let*
+   ((b-re (cadr x))
+    (f-re (caddr x))
+    (selection (lambda() (meow--thing-regexp-function b-re f-re near)))
+    (prev (lambda()
+	    (navtm--thing-next-regexp-function 'backward b-re f-re near)))
+    (next (lambda()
+	    (navtm--thing-next-regexp-function 'forward b-re f-re near)))
+    (startof (lambda() (car (funcall prev))))
+    (endof (lambda() (cdr (funcall next)))))
+    (list selection prev next startof endof)))
 
 ;;; Symbols
 (defun navtm--thing-next-symbol-function (direction x forward-op)
@@ -295,14 +309,19 @@
                 No forward-op for symbol %s and no forward-%s found.\
                 Navigation/expansions to %s will not be available.\
                 Consider registering %s as functions." x x x x))
-    (list
-      (lambda () (bounds-of-thing-at-point x))
-      (if (functionp forward-op)
-	  (lambda () (navtm--thing-next-symbol-function 'backward x forward-op))
-	(lambda() 'nil))
-      (if (functionp forward-op)
-	  (lambda () (navtm--thing-next-symbol-function 'forward x forward-op))
-	(lambda() 'nil)))))
+    (let*
+     ((selection (lambda() (bounds-of-thing-at-point x)))
+      (prev (if (functionp forward-op)
+	        (lambda()
+		  (navtm--thing-next-symbol-function 'backward x forward-op))
+	      (lambda() 'nil)))
+      (next (if (functionp forward-op)
+	        (lambda()
+		  (navtm--thing-next-symbol-function 'forward x forward-op))
+	      (lambda() 'nil)))
+      (startof (lambda() (car (funcall prev))))
+      (endof (lambda() (cdr (funcall next)))))
+    (list selection prev next startof endof))))
 
 ;;; Function
 (defun navtm--thing-make-function-function (x)
@@ -312,10 +331,13 @@
    (select-function prev-function next-function)."
   (let*
    ((prev-next (eq (length x) 4))
+    (startof-endof (eq (length x) 6))
     (selection (if (eq (length x) 1) (nth 0 x) (nth 1 x)))
     (prev (if prev-next (nth 2 x) (lambda() 'nil)))
-    (next (if prev-next (nth 3 x) (lambda() 'nil))))
-   (list selection prev next)))
+    (next (if prev-next (nth 3 x) (lambda() 'nil)))
+    (startof (if startof-endof (nth 4 x) (lambda() (car (funcall prev)))))
+    (endof (if startof-endof (nth 5 x) (lambda() (cdr (funcall next))))))
+   (list selection prev next startof endof)))
 
 ;;; Registry
 (defvar navtm--thing-registry nil
@@ -361,6 +383,20 @@ next-bounds-fn return a cons of (start . end) for that thing.")
     (let ((function-list
 	   (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
         (funcall (nth 2 function-list)))))
+
+(defun navtm--parse-start-of-thing (thing inner)
+  "Parse until start of INNER THING."
+  (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
+    (let ((function-list
+	   (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
+        (funcall (nth 3 function-list)))))
+
+(defun navtm--parse-end-of-thing (thing inner)
+  "Parse until end of INNER THING."
+  (when-let (bounds-fn-pair (plist-get navtm--thing-registry thing))
+    (let ((function-list
+	   (if inner (nth 0 bounds-fn-pair) (nth 1 bounds-fn-pair))))
+        (funcall (nth 4 function-list)))))
 
 (defun navtm--thing-parse (x near)
   "Parse thing X according to type.
